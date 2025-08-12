@@ -19,6 +19,11 @@ gem "jbuilder"
 # Use Redis adapter to run Action Cable in production
 # gem "redis", ">= 4.0.1"
 
+# MongoDB ODM for Rails
+gem "mongoid", "~> 8.1"
+# Encrypted fields for MongoDB - will add later if needed
+# gem "mongoid-encrypted-fields", "~> 1.3"
+
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
 # gem "bcrypt", "~> 3.1.7"
 
@@ -43,6 +48,10 @@ group :development, :test do
 
   # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
   gem "rubocop-rails-omakase", require: false
+  
+  # RSpec for testing
+  gem "rspec-rails", "~> 7.0"
+  gem "factory_bot_rails"
 end
 
 group :development do
