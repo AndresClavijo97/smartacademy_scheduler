@@ -39,9 +39,9 @@ class User
   field :last_name, type: String
   field :active, type: Boolean, default: true
 
-  ## Schoolpack credentials (encrypted)
+  ## Schoolpack credentials
   field :schoolpack_username, type: String
-  field :schoolpack_password_encrypted, type: String
+  field :schoolpack_password, type: String
 
   ## Relationships
   has_one :user_preference, dependent: :destroy
@@ -50,7 +50,7 @@ class User
   validates :first_name, presence: true
   validates :last_name, presence: true
   validates :schoolpack_username, presence: true
-  validates :schoolpack_password_encrypted, presence: true
+  validates :schoolpack_password, presence: true
 
   ## Custom indexes
   index({ created_at: 1 })

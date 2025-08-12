@@ -18,8 +18,9 @@ RSpec.describe User, type: :model do
       end
 
       it 'prevents duplicate email addresses' do
-        create(:user, email: 'student@smart.edu.co')
-        duplicate_user = build(:user, email: 'student@smart.edu.co')
+        unique_email = "student#{Time.current.to_i}@smart.edu.co"
+        existing_user = create(:user, email: unique_email)
+        duplicate_user = build(:user, email: unique_email)
 
         expect(duplicate_user.save).to be false
         expect(duplicate_user.errors[:email]).to include('has already been taken')
@@ -70,9 +71,9 @@ RSpec.describe User, type: :model do
     context 'when storing credentials for automation' do
       let(:automation_user) { create(:user, :automation_ready) }
 
-      it 'securely stores schoolpack credentials' do
+      it 'stores schoolpack credentials' do
         expect(automation_user.schoolpack_username).to be_present
-        expect(automation_user.schoolpack_password_encrypted).to be_present
+        expect(automation_user.schoolpack_password).to be_present
       end
 
       it 'requires schoolpack username' do
@@ -82,11 +83,11 @@ RSpec.describe User, type: :model do
         expect(user.errors[:schoolpack_username]).to include("can't be blank")
       end
 
-      it 'requires encrypted schoolpack password' do
-        user = build(:user, schoolpack_password_encrypted: nil)
+      it 'requires schoolpack password' do
+        user = build(:user, schoolpack_password: nil)
         
         expect(user.save).to be false
-        expect(user.errors[:schoolpack_password_encrypted]).to include("can't be blank")
+        expect(user.errors[:schoolpack_password]).to include("can't be blank")
       end
     end
   end
@@ -144,15 +145,15 @@ RSpec.describe User, type: :model do
 
       it 'updates schoolpack credentials' do
         new_username = 'new.username'
-        new_encrypted_password = Faker::Crypto.sha256
+        new_password = 'new_schoolpack_password'
         
         student.update!(
           schoolpack_username: new_username,
-          schoolpack_password_encrypted: new_encrypted_password
+          schoolpack_password: new_password
         )
         
         expect(student.schoolpack_username).to eq(new_username)
-        expect(student.schoolpack_password_encrypted).to eq(new_encrypted_password)
+        expect(student.schoolpack_password).to eq(new_password)
       end
 
       it 'is active by default' do
@@ -163,6 +164,124 @@ RSpec.describe User, type: :model do
         inactive_student = create(:user, :inactive)
         
         expect(inactive_student.active).to be false
+      end
+    end
+  end
+
+  describe 'enhanced validations and relationships' do
+    context 'when validating required fields' do
+      it 'requires first_name presence' do
+        user = build(:user, first_name: nil)
+        
+        expect(user.save).to be false
+        expect(user.errors[:first_name]).to include("can't be blank")
+      end
+
+      it 'requires last_name presence' do
+        user = build(:user, last_name: nil)
+        
+        expect(user.save).to be false
+        expect(user.errors[:last_name]).to include("can't be blank")
+      end
+
+      it 'requires schoolpack_username presence' do
+        user = build(:user, schoolpack_username: nil)
+        
+        expect(user.save).to be false
+        expect(user.errors[:schoolpack_username]).to include("can't be blank")
+      end
+
+      it 'requires schoolpack_password presence' do
+        user = build(:user, schoolpack_password: nil)
+        
+        expect(user.save).to be false
+        expect(user.errors[:schoolpack_password]).to include("can't be blank")
+      end
+    end
+
+    context 'when managing schoolpack credentials' do
+      it 'stores schoolpack username and password as strings' do
+        user = build(:user)
+        username = 'student.username'
+        password = 'schoolpack_secret123'
+        
+        user.schoolpack_username = username
+        user.schoolpack_password = password
+        user.save
+        
+        expect(user.schoolpack_username).to eq(username)
+        expect(user.schoolpack_password).to eq(password)
+      end
+
+      it 'validates schoolpack credentials presence' do
+        user = build(:user, schoolpack_username: '', schoolpack_password: '')
+        
+        expect(user.save).to be false
+        expect(user.errors[:schoolpack_username]).to include("can't be blank")
+        expect(user.errors[:schoolpack_password]).to include("can't be blank")
+      end
+    end
+
+    context 'when managing user preferences relationship' do
+      it 'has one user_preference with dependent destroy' do
+        user = create(:user)
+        preference = create(:user_preference, user: user)
+        
+        expect(user.user_preference).to eq(preference)
+        
+        user.destroy
+        expect(UserPreference.where(id: preference.id).exists?).to be false
+      end
+
+      it 'allows user creation without immediate preference' do
+        user = create(:user)
+        
+        expect(user).to be_persisted
+        expect(user.user_preference).to be_nil
+      end
+
+      it 'creates preference through association' do
+        user = create(:user)
+        
+        user.create_user_preference(
+          office: 'Bello',
+          course: 'A1',
+          lesson: 'Basic English',
+          user_id: user.id.to_s
+        )
+        
+        expect(user.user_preference).to be_present
+        expect(user.user_preference.office).to eq('Bello')
+      end
+    end
+
+    context 'when managing user account status' do
+      it 'defaults to active status' do
+        user = create(:user)
+        
+        expect(user.active).to be true
+      end
+
+      it 'can be deactivated' do
+        user = create(:user, active: false)
+        
+        expect(user.active).to be false
+      end
+
+      it 'includes active scope functionality' do
+        active_user = create(:user, active: true)
+        inactive_user = create(:user, active: false)
+        
+        expect(User.where(active: true)).to include(active_user)
+        expect(User.where(active: true)).not_to include(inactive_user)
+      end
+    end
+
+    context 'when indexing for performance' do
+      it 'has proper indexes defined' do
+        index_keys = User.index_specifications.map(&:key)
+        expect(index_keys).to include({ created_at: 1 })
+        expect(index_keys).to include({ active: 1 })
       end
     end
   end

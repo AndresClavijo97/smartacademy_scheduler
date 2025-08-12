@@ -6,7 +6,7 @@ FactoryBot.define do
     first_name { Faker::Name.first_name }
     last_name { Faker::Name.last_name }
     schoolpack_username { Faker::Internet.username(specifier: 5..8) }
-    schoolpack_password_encrypted { Faker::Crypto.sha256 }
+    schoolpack_password { 'schoolpack123' }
     active { true }
 
     trait :inactive do
