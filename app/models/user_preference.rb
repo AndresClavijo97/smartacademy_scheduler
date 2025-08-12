@@ -2,6 +2,11 @@ class UserPreference
   include Mongoid::Document
   include Mongoid::Timestamps
 
+  # Constants
+  VALID_OFFICES = %w[Bello Medellin Envigado].freeze
+  VALID_COURSES = %w[A1 A2 B1 B2 C1 C2].freeze
+  REQUIRED_CREDENTIAL_FIELDS = %w[username password].freeze
+
   # Fields
   field :office, type: String
   field :course, type: String
@@ -9,6 +14,9 @@ class UserPreference
   field :schedule, type: Hash, default: {}
   field :credentials, type: Hash, default: {}
   field :user_id, type: String
+
+  # Relationships
+  belongs_to :user, optional: true  # Optional for backward compatibility
 
   # Validations
   validates :office, presence: true, inclusion: { in: VALID_OFFICES }
@@ -19,11 +27,6 @@ class UserPreference
   # Indexes
   index({ office: 1, course: 1, lesson: 1 })
   index({ user_id: 1 }, { unique: true })
-
-  # Constants
-  VALID_OFFICES = %w[Bello Medellin Envigado].freeze
-  VALID_COURSES = %w[A1 A2 B1 B2 C1 C2].freeze
-  REQUIRED_CREDENTIAL_FIELDS = %w[username password].freeze
 
   # Scopes
   scope :by_office, ->(office) { where(office: office) }
