@@ -54,6 +54,10 @@ group :development, :test do
   gem "rspec-rails", "~> 7.0"
   gem "factory_bot_rails"
   gem "faker", "~> 3.2"
+  
+  # Web automation and scraping
+  gem "capybara"
+  gem "selenium-webdriver"
 end
 
 group :development do
