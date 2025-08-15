@@ -15,6 +15,11 @@ end
 # Configuración de drivers
 Capybara.register_driver :selenium_chrome do |app|
   options = Selenium::WebDriver::Chrome::Options.new
+
+  # Anti-detección
+  options.add_argument('--disable-blink-features=AutomationControlled')
+
+  options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
   # options.add_argument('--headless')
   # options.add_argument('--no-sandbox')
   # options.add_argument('--disable-dev-shm-usage')
@@ -22,5 +27,10 @@ Capybara.register_driver :selenium_chrome do |app|
   # options.add_argument('--window-size=1920,1080')
   # options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
   
+  # Otros argumentos
+  options.add_argument('--disable-dev-shm-usage')
+  options.add_argument('--no-sandbox')
+  options.add_argument('--disable-gpu')
+
   Capybara::Selenium::Driver.new(app, browser: :chrome, options: options)
 end

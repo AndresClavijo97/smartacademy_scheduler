@@ -1,12 +1,11 @@
 class Schedule
   include Mongoid::Document
   
-  # Constantes del sistema de horarios
+  # Constantes del sistema de horarios (basado en análisis real)
   LESSON_DURATION_MINUTES = 90
   DAILY_CLASS_LIMIT = 10
   START_HOUR = 6  # 6:00 AM
   END_HOUR = 19   # 7:30 PM (última clase termina a 9:00 PM)
-  LESSONS_PER_A1_COURSE = 60
   
   # Campos del documento
   field :user_id, type: BSON::ObjectId
