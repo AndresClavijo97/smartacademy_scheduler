@@ -7,6 +7,7 @@ class Course
   TOTAL_LESSONS_A1 = 60
   AVAILABLE_LEVELS = %w[A1 A2 B1 B2 C1 C2].freeze
   
+  field :code, type: String
   field :title, type: String
   field :description, type: String
   field :level, type: String, default: 'A1'
@@ -16,9 +17,14 @@ class Course
   # Relationships
   has_many :lessons, dependent: :destroy
   has_many :enrollments, dependent: :destroy
-  has_many :users, through: :enrollments
+  
+  # Mongoid doesn't support :through associations, use methods instead
+  def users
+    User.in(id: enrollments.pluck(:user_id))
+  end
   
   # Validations
+  validates :code, presence: true, uniqueness: true
   validates :title, presence: true
   validates :level, presence: true, inclusion: { in: AVAILABLE_LEVELS }
   validates :total_lessons, presence: true, numericality: { greater_than: 0 }
@@ -28,6 +34,7 @@ class Course
   scope :by_level, ->(level) { where(level: level) }
   
   # Indexes
+  index({ code: 1 }, { unique: true })
   index({ level: 1, active: 1 })
   index({ created_at: 1 })
   

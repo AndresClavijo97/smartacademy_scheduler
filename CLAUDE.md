@@ -20,6 +20,11 @@
 - **Estructura MongoDB**: Usar Mongoid para todos los modelos
 - **Validaciones**: Incluir validaciones apropiadas en todos los modelos
 - **Relaciones**: Definir claramente las relaciones entre modelos
+- **Nombres de clases**: Evitar prefijos redundantes como "SmartAcademy" en clases - usar nombres concisos
+- **Value Objects**: Preferir value objects en lugar de hashes para estructuras de datos
+- **Constantes**: Preferir constantes en lugar de métodos con códigos hardcodeados
+- **Testing**: EVITAR crear archivos de ejemplo - usar pruebas unitarias (RSpec) para validar funcionalidad
+- **Documentación**: Los specs sirven como documentación ejecutable del comportamiento esperado
 
 ### Modelos Principales
 1. **User**: Usuarios del sistema (estudiantes)

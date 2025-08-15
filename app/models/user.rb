@@ -1,5 +1,7 @@
 class User
   include Mongoid::Document
+  include Mongoid::Timestamps
+
   # Include default devise modules. Others available are:
   # :confirmable, :lockable, :timeoutable, :trackable and :omniauthable
   devise :database_authenticatable, :registerable,
@@ -56,5 +58,43 @@ class User
   index({ created_at: 1 })
   index({ active: 1 })
 
-  include Mongoid::Timestamps
+  # Simple method to register a class
+  def register_class(course_code, date, time)
+    return { success: false, error: "Usuario inactivo" } unless active?
+    return { success: false, error: "Credenciales de SmartAcademia faltantes" } unless has_smartpack_credentials?
+
+    lesson = Lesson.create!(
+      user: self,
+      course_code: course_code,
+      scheduled_date: date,
+      start_time: time,
+      end_time: calculate_end_time(time),
+      duration_minutes: 90,
+      status: 'scheduled'
+    )
+
+    { 
+      success: true, 
+      lesson_id: lesson.id.to_s,
+      message: "Clase #{course_code} registrada para #{date} a las #{time}"
+    }
+  rescue => e
+    { success: false, error: e.message }
+  end
+
+  def full_name
+    "#{first_name} #{last_name}".strip
+  end
+
+  def has_smartpack_credentials?
+    schoolpack_username.present? && schoolpack_password.present?
+  end
+
+  private
+
+  def calculate_end_time(start_time)
+    time = Time.parse(start_time)
+    (time + 90.minutes).strftime('%H:%M')
+  end
+
 end
