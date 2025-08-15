@@ -2,10 +2,15 @@
 
 ## Reglas del Sistema
 
-### Estructura de Cursos
+### Estructura de Cursos (Confirmado por Screenshots Completos)
 - **Sin instructores**: El sistema no maneja instructores, es un sistema automatizado
-- **Cursos A1**: Cada curso de nivel A1 tiene exactamente 60 lecciones
+- **Estructura por nivel**: Cada nivel tiene 98 lecciones totales (82 obligatorias + 16 opcionales)
+- **Lecciones obligatorias**: 8 INTRO + 72 CLASE + 2 EXAMEN (preparación + final)
+- **Lecciones opcionales**: 8 QUIZ UNITS + 8 SMART ZONE distribuidos a lo largo del nivel
 - **Duración de lecciones**: Cada lección dura 1 hora y 30 minutos (90 minutos)
+- **Progresión automática**: Usuario avanza al siguiente nivel al completar las 82 lecciones obligatorias
+- **Secuencia numérica**: Las clases siguen numeración secuencial del 1 al 98 (A1), 99-196 (A2), etc.
+- **Transición de niveles**: A1 termina en clase 98, A2 comienza en clase 99
 
 ### Sistema de Horarios
 - **Horario disponible**: 6:00 AM hasta 7:30 PM
@@ -26,11 +31,27 @@
 - **Testing**: EVITAR crear archivos de ejemplo - usar pruebas unitarias (RSpec) para validar funcionalidad
 - **Documentación**: Los specs sirven como documentación ejecutable del comportamiento esperado
 
+### Tipos de Lecciones (Estructura Real Confirmada por Screenshots)
+- **INTRO (números 1-8)**: 8 clases introductorias obligatorias (90 min cada una)
+- **CLASE (números 9-96)**: 72 clases principales obligatorias distribuidas en bloques (90 min cada una)
+- **QUIZ UNITS**: 8 evaluaciones opcionales distribuidas a lo largo del nivel (90 min cada una)
+- **SMART ZONE**: 8 actividades complementarias opcionales distribuidas (90 min cada una)
+- **PREPARACIÓN EXAMEN FINAL (número 97)**: 1 clase preparatoria obligatoria (90 min)
+- **EXAMEN FINAL (número 98)**: 1 evaluación final obligatoria (90 min)
+
+### Estados de Lecciones
+- **scheduled**: Programada pero no iniciada
+- **in_progress**: En curso
+- **completed**: Completada exitosamente
+- **cancelled**: Cancelada
+- **no_show**: Usuario no se presentó
+
 ### Modelos Principales
 1. **User**: Usuarios del sistema (estudiantes)
-2. **Course**: Cursos disponibles (principalmente A1)
-3. **Lesson**: Lecciones individuales con horarios asignados
-4. **Enrollment**: Inscripciones de usuarios en cursos
+2. **Course**: Cursos por nivel (A1, A2, B1, B2, C1)
+3. **Lesson**: Lecciones individuales con horarios y estados
+4. **LessonType**: Tipos de lecciones (regular, quiz, smart_zone, etc.)
+5. **Enrollment**: Inscripciones de usuarios en cursos
 
 ### Autenticación
 - Usa Devise con campos personalizados:
