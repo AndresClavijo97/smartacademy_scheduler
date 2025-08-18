@@ -46,7 +46,7 @@ class User
   field :schoolpack_password, type: String
 
   ## Relationships
-  has_one :user_preference, dependent: :destroy
+  embeds_one :preferences, class_name: Preference, dependent: :destroy
 
   ## Validations (additional to Devise)
   validates :first_name, presence: true
@@ -61,7 +61,6 @@ class User
   # Simple method to register a class
   def register_class(course_code, date, time)
     return { success: false, error: "Usuario inactivo" } unless active?
-    return { success: false, error: "Credenciales de SmartAcademia faltantes" } unless has_smartpack_credentials?
 
     lesson = Lesson.create!(
       user: self,
@@ -86,9 +85,6 @@ class User
     "#{first_name} #{last_name}".strip
   end
 
-  def has_smartpack_credentials?
-    schoolpack_username.present? && schoolpack_password.present?
-  end
 
   private
 
@@ -96,5 +92,4 @@ class User
     time = Time.parse(start_time)
     (time + 90.minutes).strftime('%H:%M')
   end
-
 end

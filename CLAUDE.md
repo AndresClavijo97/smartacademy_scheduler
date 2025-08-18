@@ -48,10 +48,7 @@
 
 ### Modelos Principales
 1. **User**: Usuarios del sistema (estudiantes)
-2. **Course**: Cursos por nivel (A1, A2, B1, B2, C1)
-3. **Lesson**: Lecciones individuales con horarios y estados
-4. **LessonType**: Tipos de lecciones (regular, quiz, smart_zone, etc.)
-5. **Enrollment**: Inscripciones de usuarios en cursos
+3. **Lesson**: Lecciones individuales con horarios, estados y tipos (kind field)
 
 ### Autenticación
 - Usa Devise con campos personalizados:

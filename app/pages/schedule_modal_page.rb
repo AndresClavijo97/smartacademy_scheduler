@@ -1,6 +1,10 @@
 class ScheduleModalPage < ApplicationPage
   private attr_reader :data
 
+  def initialize
+    @data = []
+  end
+
   def find_next_available_class
     within_schedule_frame do    
       execute_js
@@ -10,7 +14,7 @@ class ScheduleModalPage < ApplicationPage
   private
 
   def execute_js
-    @data = page.evaluate_script(extract_rows_js)
+    @data << evaluate_script(extract_rows_js)
   end
 
   def within_schedule_frame(&block)
@@ -22,30 +26,84 @@ class ScheduleModalPage < ApplicationPage
 
   def extract_rows_js
     <<~JS
-      (() => {
-        const rows = document.querySelectorAll('tr[id*="Grid1ContainerRow"]');
-        console.log('JS: Found', rows.length, 'rows');
+      (async () => {
+        const MAPPINGS = { nivel: 3, claseNo: 4, descripcion: 5, nota: 7, estado: 10, fecha: 11, sede: 14 };
         
-        return Array.from(rows).map((row, index) => {
-          const cells = Array.from(row.querySelectorAll('td'));
+        const extractRowData = (row, index, pageNum) => {
+          const cellTexts = Array.from(row.querySelectorAll('td'), cell => cell.textContent?.trim() || '');
+          const { nivel, claseNo, descripcion, nota, estado, fecha, sede } = MAPPINGS;
           
           return {
             rowIndex: index + 1,
             rowId: row.id,
-            cellCount: cells.length,
-            nivel: cells[0] ? cells[0].textContent.trim() : '',
-            claseNo: cells[1] ? cells[1].textContent.trim() : '',
-            resumenDescripcion: cells[2] ? cells[2].textContent.trim() : '',
-            nota: cells[3] ? cells[3].textContent.trim() : '',
-            aprobo: cells[4] ? cells[4].textContent.trim() : '',
-            estado: cells[5] ? cells[5].textContent.trim() : '',
-            fechaClase: cells[6] ? cells[6].textContent.trim() : '',
-            nombreSede: cells[7] ? cells[7].textContent.trim() : '',
-            allCells: cells.map(cell => cell.textContent.trim()),
-            fullText: row.textContent.trim()
+            pageNumber: pageNum,
+            nivel: cellTexts[nivel],
+            claseNo: cellTexts[claseNo],
+            resumenDescripcion: cellTexts[descripcion],
+            nota: parseFloat((cellTexts[nota] || '0').replace(',', '.')) || 0,
+            estado: cellTexts[estado],
+            fechaClase: cellTexts[fecha],
+            nombreSede: cellTexts[sede]
           };
-        });
+        };
+
+        const extractCurrentPage = (pageNum) => 
+          Array.from(document.querySelectorAll('tr[id*="Grid1ContainerRow"]'), 
+                     (row, index) => extractRowData(row, index, pageNum));
+
+        const hasNextPage = () => {
+          const nextBtn = document.querySelector('.PagingButtonsNext');
+          return nextBtn && !nextBtn.disabled;
+        };
+
+        const allData = [];
+        let currentPage = 1;
+
+        // Extraer todas las páginas
+        do {
+          const pageData = extractCurrentPage(currentPage);
+          allData.push(...pageData);
+          console.log(`Página ${currentPage}: ${pageData.length} filas`);
+
+          if (hasNextPage()) {
+            document.querySelector('.PagingButtonsNext').click();
+            await new Promise(resolve => setTimeout(resolve, 4000)); // Esperar carga
+            currentPage++;
+          } else {
+            break;
+          }
+        } while (currentPage <= 35); // Límite de seguridad
+
+        return allData;
       })();
     JS
+    # <<~JS
+    #   (() => {
+    #     const MAPPINGS = { nivel: 3, claseNo: 4, descripcion: 5, nota: 7, estado: 10, fecha: 11, sede: 14 };
+                
+    #     const extractRowData = (row, index) => {
+    #       const cellTexts = Array.from(row.querySelectorAll('td'), cell => cell.textContent?.trim() || '');
+    #       const { nivel, claseNo, descripcion, nota, estado, fecha, sede } = MAPPINGS;
+          
+    #       return {
+    #         rowIndex: index + 1,
+    #         rowId: row.id,
+    #         nivel: cellTexts[nivel],
+    #         claseNo: cellTexts[claseNo],
+    #         resumenDescripcion: cellTexts[descripcion],
+    #         nota: cellTexts[nota],
+    #         estado: cellTexts[estado],
+    #         fechaClase: cellTexts[fecha],
+    #         nombreSede: cellTexts[sede]
+    #       };
+    #     };
+
+    #     return Array.from(document.querySelectorAll('tr[id*="Grid1ContainerRow"]'), extractRowData);
+    #   })();
+    # JS
   end
+
+  # def next_page
+  #   evaluate_script("document.querySelector('.PagingButtonsNext').click();")
+  # end
 end

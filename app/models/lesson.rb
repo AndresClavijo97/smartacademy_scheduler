@@ -3,49 +3,44 @@ class Lesson
   include Mongoid::Timestamps
   include AASM
   
-  # Constants para estados
-  SCHEDULED = 'scheduled'.freeze
-  IN_PROGRESS = 'in_progress'.freeze
-  COMPLETED = 'completed'.freeze
-  CANCELLED = 'cancelled'.freeze
-  NO_SHOW = 'no_show'.freeze
-
-  LESSON_STATES = [
-    SCHEDULED,
-    IN_PROGRESS,
-    COMPLETED,
-    CANCELLED,
-    NO_SHOW
-  ].freeze
-
   # Constants generales
   DEFAULT_DURATION_MINUTES = 90
   MAX_CLASSES_PER_DAY = 10
   
+  # Horarios de negocio
+  BUSINESS_START_HOUR = 6
+  BUSINESS_END_HOUR = 19
+  BUSINESS_END_MINUTE = 30
+
+  # Tipos de lecciones con información de si son requeridas
+  TYPES = {
+    intro: { required: true, pattern: /intro/i },
+    clase: { required: true, pattern: /clase/i },
+    quiz_unit: { required: false, pattern: /quiz\s*unit/i },
+    smart_zone: { required: false, pattern: /smart\s*zone/i },
+    exam_prep: { required: true, pattern: /preparaci[oó]n.*examen/i },
+    final_exam: { required: true, pattern: /examen\s*final/i }
+  }.freeze
+  
   # Campos
-  field :lesson_number, type: Integer
+  field :number, type: Integer
   field :course_code, type: String
-  field :scheduled_date, type: Date
-  field :start_time, type: String # "14:30" format
-  field :end_time, type: String   # "16:00" format
-  field :duration_minutes, type: Integer, default: DEFAULT_DURATION_MINUTES
-  field :status, type: String, default: SCHEDULED
-  field :notes, type: String
-  field :smartpack_lesson_id, type: String # ID de la lección en SmartAcademia
+  field :scheduled_at, type: Date
+  field :start_time, type: DateTime
+  field :end_time, type: DateTime
+  field :status, type: String
+  field :kind, type: String # Tipo de lección: intro, clase, quiz_unit, smart_zone, exam_prep, final_exam
   
   # Relationships
   belongs_to :user
   belongs_to :course, optional: true
-  belongs_to :lesson_type
   
   # Validaciones
-  validates :lesson_number, presence: true
+  validates :number, presence: true
   validates :course_code, presence: true
-  validates :scheduled_date, presence: true
   validates :start_time, presence: true
   validates :end_time, presence: true
-  validates :status, inclusion: { in: LESSON_STATES }
-  validates :duration_minutes, numericality: { greater_than: 0 }
+  validates :kind, inclusion: { in: TYPES.keys }
   
   # Validación personalizada para horarios válidos
   validate :valid_time_range
@@ -54,8 +49,8 @@ class Lesson
   # Scopes
   scope :by_status, ->(status) { where(status: status) }
   scope :by_date_range, ->(start_date, end_date) { where(scheduled_date: start_date..end_date) }
-  scope :mandatory, -> { joins(:lesson_type).where('lesson_types.is_mandatory' => true) }
-  scope :optional, -> { joins(:lesson_type).where('lesson_types.is_mandatory' => false) }
+  scope :mandatory, -> { where(:kind.in => TYPES.select { |_, v| v[:required] }.keys.map(&:to_s)) }
+  scope :optional, -> { where(:kind.in => TYPES.reject { |_, v| v[:required] }.keys.map(&:to_s)) }
   scope :for_course, ->(course_code) { where(course_code: course_code) }
   scope :today, -> { where(scheduled_date: Date.current) }
   scope :upcoming, -> { where(scheduled_date: Date.current..) }
@@ -68,11 +63,8 @@ class Lesson
 
   # State machine
   aasm column: :status do
-    state :scheduled, initial: true
-    state :in_progress
-    state :completed
-    state :cancelled
-    state :no_show
+    state :pending, initial: true
+    state :scheduled, :completed, :cancelled
 
     event :start do
       transitions from: :scheduled, to: :in_progress
@@ -86,10 +78,6 @@ class Lesson
       transitions from: [:scheduled, :in_progress], to: :cancelled
     end
 
-    event :mark_no_show do
-      transitions from: :scheduled, to: :no_show
-    end
-
     event :reschedule do
       transitions from: [:cancelled, :no_show], to: :scheduled
     end
@@ -97,11 +85,11 @@ class Lesson
 
   # Métodos de instancia
   def mandatory?
-    lesson_type.mandatory?
+    TYPES[kind.to_sym][:required]
   end
 
   def optional?
-    lesson_type.optional?
+    !mandatory?
   end
 
   def duration_in_hours
@@ -109,38 +97,22 @@ class Lesson
   end
 
   def time_range
-    "#{start_time} - #{end_time}"
-  end
-
-  def full_description
-    "#{lesson_type.name} #{lesson_number} - #{course_code}"
+    "#{start_time.strftime('%H:%M')} - #{end_time.strftime('%H:%M')}"
   end
 
   private
 
   def valid_time_range
-    return unless start_time.present? && end_time.present?
+    return if end_time <= start_time
     
-    start_parsed = Time.parse(start_time) rescue nil
-    end_parsed = Time.parse(end_time) rescue nil
-    
-    return unless start_parsed && end_parsed
-    
-    errors.add(:end_time, 'debe ser posterior a la hora de inicio') if end_parsed <= start_parsed
+    errors.add(:end_time, 'debe ser posterior a la hora de inicio')
   end
 
   def valid_business_hours
-    return unless start_time.present? && end_time.present?
+    return if start_time.hour >= BUSINESS_START_HOUR && start_time.hour < BUSINESS_END_HOUR && 
+              end_time.hour >= BUSINESS_START_HOUR && 
+              (end_time.hour < BUSINESS_END_HOUR || (end_time.hour == BUSINESS_END_HOUR && end_time.min <= BUSINESS_END_MINUTE))
     
-    start_parsed = Time.parse(start_time) rescue nil
-    end_parsed = Time.parse(end_time) rescue nil
-    
-    return unless start_parsed && end_parsed
-    
-    business_start = Time.parse('06:00')
-    business_end = Time.parse('19:30')
-    
-    errors.add(:start_time, 'debe estar entre 6:00 AM y 7:30 PM') if start_parsed.hour < 6 || start_parsed.hour >= 19
-    errors.add(:end_time, 'debe estar entre 6:00 AM y 7:30 PM') if end_parsed.hour < 6 || end_parsed.hour > 19 || (end_parsed.hour == 19 && end_parsed.min > 30)
-  end
+    errors.add(:start_time, "debe estar entre #{BUSINESS_START_HOUR}:00 AM y #{BUSINESS_END_HOUR}:#{BUSINESS_END_MINUTE} PM")
+    errors.add(:end_time, "debe estar entre #{BUSINESS_START_HOUR}:00 AM y #{BUSINESS_END_HOUR}:#{BUSINESS_END_MINUTE} PM")
 end
