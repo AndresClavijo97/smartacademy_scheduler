@@ -46,7 +46,8 @@ class User
   field :schoolpack_password, type: String
 
   ## Relationships
-  embeds_one :preferences, class_name: Preference, dependent: :destroy
+  embeds_one :preferences, class_name: Preference
+  accepts_nested_attributes_for :preferences
 
   ## Validations (additional to Devise)
   validates :first_name, presence: true

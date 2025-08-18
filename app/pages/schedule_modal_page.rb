@@ -1,20 +1,31 @@
 class ScheduleModalPage < ApplicationPage
   private attr_reader :data
 
+  # Timeout constants
+  SCRIPT_TIMEOUT_SECONDS = 180
+  PAGE_LOAD_DELAY_MS = 2000
+  MAX_PAGES_LIMIT = 26
+
   def initialize
     @data = []
+    configure_timeouts
   end
 
-  def find_next_available_class
+  def fetch_all_lessions
     within_schedule_frame do    
-      execute_js
+      @data = execute(extract_lessions)
     end
+
+  rescue Selenium::WebDriver::Error::ScriptTimeoutError => e
+    puts "Script timeout occurred: #{e.message}"
+    puts "Consider reducing pagination or increasing timeout"
+    @data
   end
 
   private
 
-  def execute_js
-    @data << evaluate_script(extract_rows_js)
+  def configure_timeouts    
+    Capybara.current_session.driver.browser.manage.timeouts.script_timeout = SCRIPT_TIMEOUT_SECONDS
   end
 
   def within_schedule_frame(&block)
@@ -24,26 +35,34 @@ class ScheduleModalPage < ApplicationPage
   end
 
 
-  def extract_rows_js
+  def extract_lessions
     <<~JS
       (async () => {
-        const MAPPINGS = { nivel: 3, claseNo: 4, descripcion: 5, nota: 7, estado: 10, fecha: 11, sede: 14 };
+        const MAPPINGS = { nivel: 3, claseNo: 4, descripcion: 5 };
         
+        const TYPE_PATTERNS = {
+          intro: /intro/i,
+          clase: /clase/i,
+          quiz_unit: /quiz\s*unit/i,
+          smart_zone: /smart\s*zone/i,
+          exam_prep: /preparaci[oó]n.*examen/i,
+          final_exam: /examen\s*final/i
+        };
+
+        const determineKind = (description) => 
+          !description?.trim() ? 'unknown' :
+          Object.entries(TYPE_PATTERNS).find(([_, pattern]) => pattern.test(description))?.[0] || 'other';
+
         const extractRowData = (row, index, pageNum) => {
           const cellTexts = Array.from(row.querySelectorAll('td'), cell => cell.textContent?.trim() || '');
-          const { nivel, claseNo, descripcion, nota, estado, fecha, sede } = MAPPINGS;
+          const { nivel, claseNo, descripcion } = MAPPINGS;
           
           return {
-            rowIndex: index + 1,
-            rowId: row.id,
-            pageNumber: pageNum,
-            nivel: cellTexts[nivel],
-            claseNo: cellTexts[claseNo],
-            resumenDescripcion: cellTexts[descripcion],
-            nota: parseFloat((cellTexts[nota] || '0').replace(',', '.')) || 0,
-            estado: cellTexts[estado],
-            fechaClase: cellTexts[fecha],
-            nombreSede: cellTexts[sede]
+            html_row_id: row.id,
+            level: cellTexts[nivel] || '',
+            number: cellTexts[claseNo] || '',
+            description: cellTexts[descripcion] || '',
+            kind: determineKind(cellTexts[descripcion])
           };
         };
 
@@ -67,43 +86,15 @@ class ScheduleModalPage < ApplicationPage
 
           if (hasNextPage()) {
             document.querySelector('.PagingButtonsNext').click();
-            await new Promise(resolve => setTimeout(resolve, 4000)); // Esperar carga
+            await new Promise(resolve => setTimeout(resolve, #{PAGE_LOAD_DELAY_MS})); // Esperar carga
             currentPage++;
           } else {
             break;
           }
-        } while (currentPage <= 35); // Límite de seguridad
+        } while (currentPage <= #{MAX_PAGES_LIMIT}); // Límite de seguridad optimizado
 
         return allData;
       })();
     JS
-    # <<~JS
-    #   (() => {
-    #     const MAPPINGS = { nivel: 3, claseNo: 4, descripcion: 5, nota: 7, estado: 10, fecha: 11, sede: 14 };
-                
-    #     const extractRowData = (row, index) => {
-    #       const cellTexts = Array.from(row.querySelectorAll('td'), cell => cell.textContent?.trim() || '');
-    #       const { nivel, claseNo, descripcion, nota, estado, fecha, sede } = MAPPINGS;
-          
-    #       return {
-    #         rowIndex: index + 1,
-    #         rowId: row.id,
-    #         nivel: cellTexts[nivel],
-    #         claseNo: cellTexts[claseNo],
-    #         resumenDescripcion: cellTexts[descripcion],
-    #         nota: cellTexts[nota],
-    #         estado: cellTexts[estado],
-    #         fechaClase: cellTexts[fecha],
-    #         nombreSede: cellTexts[sede]
-    #       };
-    #     };
-
-    #     return Array.from(document.querySelectorAll('tr[id*="Grid1ContainerRow"]'), extractRowData);
-    #   })();
-    # JS
   end
-
-  # def next_page
-  #   evaluate_script("document.querySelector('.PagingButtonsNext').click();")
-  # end
 end

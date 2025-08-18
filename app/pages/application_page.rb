@@ -3,8 +3,6 @@ class ApplicationPage
   
   private
   
-  attr_reader :user
-
   def find_and_click(selector)    
     find(selector).click
   end
@@ -17,5 +15,9 @@ class ApplicationPage
     accept_confirm do
       find('#SALIR').click
     end
+  end
+
+  def execute(...)
+    evaluate_script(...)
   end
 end

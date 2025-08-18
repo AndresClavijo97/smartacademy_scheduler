@@ -7,10 +7,6 @@ class DashboardPage < ApplicationPage
     has_selector?('#vUSUNOMBRE') && has_text?('Bienvenido (a):')
   end
 
-  def user_name
-    find('#span_vUSUNOMBRE').text
-  end
-
   def go_home
     find('#IMAGE3').click
   end

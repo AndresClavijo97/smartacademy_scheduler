@@ -23,25 +23,26 @@ class Lesson
   }.freeze
   
   # Campos
+  field :level, type: String
   field :number, type: Integer
-  field :course_code, type: String
+  field :desription, type: String
+  field :status, type: String
+  field :office, type: String
   field :scheduled_at, type: Date
   field :start_time, type: DateTime
   field :end_time, type: DateTime
-  field :status, type: String
   field :kind, type: String # Tipo de lección: intro, clase, quiz_unit, smart_zone, exam_prep, final_exam
-  
+  field :html_row_id, type: String
   # Relationships
   belongs_to :user
-  belongs_to :course, optional: true
   
   # Validaciones
   validates :number, presence: true
-  validates :course_code, presence: true
-  validates :start_time, presence: true
-  validates :end_time, presence: true
+  validates :level, presence: true
   validates :kind, inclusion: { in: TYPES.keys }
-  
+  validates :html_row_id, presence: true, uniqueness: true
+  validates :description, presence: true
+
   # Validación personalizada para horarios válidos
   validate :valid_time_range
   validate :valid_business_hours
@@ -50,8 +51,6 @@ class Lesson
   scope :by_status, ->(status) { where(status: status) }
   scope :by_date_range, ->(start_date, end_date) { where(scheduled_date: start_date..end_date) }
   scope :mandatory, -> { where(:kind.in => TYPES.select { |_, v| v[:required] }.keys.map(&:to_s)) }
-  scope :optional, -> { where(:kind.in => TYPES.reject { |_, v| v[:required] }.keys.map(&:to_s)) }
-  scope :for_course, ->(course_code) { where(course_code: course_code) }
   scope :today, -> { where(scheduled_date: Date.current) }
   scope :upcoming, -> { where(scheduled_date: Date.current..) }
   

@@ -1,5 +1,4 @@
 class LoginPage < ApplicationPage
-
   def initialize(user)
     @username = user.schoolpack_username
     @password = user.schoolpack_password
