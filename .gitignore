@@ -39,3 +39,6 @@
 # Ignore analysis scripts
 analyze_scheduler.rb
 scripts.rb
+
+# Ignore coverage reports
+/coverage/

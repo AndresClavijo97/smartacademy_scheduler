@@ -161,26 +161,193 @@ RSpec.describe Lesson, type: :model do
   describe 'state machine' do
     let(:lesson) { create(:lesson) }
 
-    it 'starts with pending status' do
-      expect(lesson.status).to eq('pending')
+    describe 'initial state' do
+      it 'starts with pending status' do
+        expect(lesson).to have_state(:pending)
+      end
+
+      it 'has pending as initial state' do
+        new_lesson = build(:lesson)
+        expect(new_lesson.status).to eq('pending')
+      end
     end
 
-    it 'transitions from scheduled to completed' do
-      lesson.update(status: 'scheduled')
-      lesson.complete
-      expect(lesson.status).to eq('completed')
+    describe 'state transitions' do
+      context 'when lesson is pending' do
+        let(:pending_lesson) { create(:lesson, status: 'pending') }
+
+        it 'allows schedule event' do
+          expect(pending_lesson).to allow_event(:schedule)
+        end
+
+        it 'allows cancel event' do
+          expect(pending_lesson).to allow_event(:cancel)
+        end
+
+        it 'does not allow start event' do
+          expect(pending_lesson).not_to allow_event(:start)
+        end
+
+        it 'does not allow complete event' do
+          expect(pending_lesson).not_to allow_event(:complete)
+        end
+
+        it 'transitions to scheduled on schedule' do
+          pending_lesson.schedule
+          expect(pending_lesson).to have_state(:scheduled)
+        end
+
+        it 'transitions to cancelled on cancel' do
+          pending_lesson.cancel
+          expect(pending_lesson).to have_state(:cancelled)
+        end
+      end
+
+      context 'when lesson is scheduled' do
+        let(:scheduled_lesson) { create(:lesson, status: 'scheduled') }
+
+        it 'has scheduled state' do
+          expect(scheduled_lesson).to have_state(:scheduled)
+        end
+
+        it 'allows start event' do
+          expect(scheduled_lesson).to allow_event(:start)
+        end
+
+        it 'allows complete event' do
+          expect(scheduled_lesson).to allow_event(:complete)
+        end
+
+        it 'allows cancel event' do
+          expect(scheduled_lesson).to allow_event(:cancel)
+        end
+
+        it 'transitions to in_progress on start' do
+          scheduled_lesson.start
+          expect(scheduled_lesson).to have_state(:in_progress)
+        end
+
+        it 'transitions to completed on complete' do
+          scheduled_lesson.complete
+          expect(scheduled_lesson).to have_state(:completed)
+        end
+
+        it 'transitions to cancelled on cancel' do
+          scheduled_lesson.cancel
+          expect(scheduled_lesson).to have_state(:cancelled)
+        end
+      end
+
+      context 'when lesson is in_progress' do
+        let(:in_progress_lesson) { create(:lesson, status: 'in_progress') }
+
+        it 'has in_progress state' do
+          expect(in_progress_lesson).to have_state(:in_progress)
+        end
+
+        it 'allows complete event' do
+          expect(in_progress_lesson).to allow_event(:complete)
+        end
+
+        it 'allows cancel event' do
+          expect(in_progress_lesson).to allow_event(:cancel)
+        end
+
+        it 'does not allow start event' do
+          expect(in_progress_lesson).not_to allow_event(:start)
+        end
+
+        it 'transitions to completed on complete' do
+          in_progress_lesson.complete
+          expect(in_progress_lesson).to have_state(:completed)
+        end
+
+        it 'transitions to cancelled on cancel' do
+          in_progress_lesson.cancel
+          expect(in_progress_lesson).to have_state(:cancelled)
+        end
+      end
+
+      context 'when lesson is completed' do
+        let(:completed_lesson) { create(:lesson, status: 'completed') }
+
+        it 'has completed state' do
+          expect(completed_lesson).to have_state(:completed)
+        end
+
+        it 'does not allow any events' do
+          expect(completed_lesson).not_to allow_event(:start)
+          expect(completed_lesson).not_to allow_event(:complete)
+          expect(completed_lesson).not_to allow_event(:cancel)
+          expect(completed_lesson).not_to allow_event(:reschedule)
+        end
+
+        it 'is a final state' do
+          expect(completed_lesson).not_to allow_transition_to(:pending)
+          expect(completed_lesson).not_to allow_transition_to(:scheduled)
+          expect(completed_lesson).not_to allow_transition_to(:cancelled)
+        end
+      end
+
+      context 'when lesson is cancelled' do
+        let(:cancelled_lesson) { create(:lesson, status: 'cancelled') }
+
+        it 'has cancelled state' do
+          expect(cancelled_lesson).to have_state(:cancelled)
+        end
+
+        it 'allows reschedule event' do
+          expect(cancelled_lesson).to allow_event(:reschedule)
+        end
+
+        it 'does not allow other events' do
+          expect(cancelled_lesson).not_to allow_event(:start)
+          expect(cancelled_lesson).not_to allow_event(:complete)
+          expect(cancelled_lesson).not_to allow_event(:cancel)
+        end
+
+        it 'transitions to scheduled on reschedule' do
+          cancelled_lesson.reschedule
+          expect(cancelled_lesson).to have_state(:scheduled)
+        end
+      end
+
+      context 'when lesson has no_show status' do
+        let(:no_show_lesson) { create(:lesson, status: 'no_show') }
+
+        it 'has no_show state' do
+          expect(no_show_lesson).to have_state(:no_show)
+        end
+
+        it 'allows reschedule event' do
+          expect(no_show_lesson).to allow_event(:reschedule)
+        end
+
+        it 'transitions to scheduled on reschedule' do
+          no_show_lesson.reschedule
+          expect(no_show_lesson).to have_state(:scheduled)
+        end
+      end
     end
 
-    it 'transitions from scheduled to cancelled' do
-      lesson.update(status: 'scheduled')
-      lesson.cancel
-      expect(lesson.status).to eq('cancelled')
-    end
+    describe 'state machine validation' do
+      it 'defines all expected states' do
+        expected_states = [ :pending, :scheduled, :in_progress, :completed, :cancelled, :no_show ]
+        lesson_states = Lesson.aasm.states.map(&:name)
 
-    it 'can reschedule from cancelled' do
-      lesson.update(status: 'cancelled')
-      lesson.reschedule
-      expect(lesson.status).to eq('scheduled')
+        expected_states.each do |state|
+          expect(lesson_states).to include(state)
+        end
+      end
+
+      it 'defines all expected events' do
+        expected_events = [ :schedule, :start, :complete, :cancel, :reschedule ]
+        lesson_events = Lesson.aasm.events.map(&:name)
+
+        expected_events.each do |event|
+          expect(lesson_events).to include(event)
+        end
+      end
     end
   end
 

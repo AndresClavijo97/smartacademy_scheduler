@@ -58,6 +58,9 @@ group :development, :test do
   gem "factory_bot_rails"
   gem "faker", "~> 3.2"
 
+  # Code coverage
+  gem "simplecov", require: false
+
   # Web automation and scraping
   gem "capybara"
   gem "selenium-webdriver"
