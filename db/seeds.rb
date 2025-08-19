@@ -1,6 +1,6 @@
 puts "Creando datos de prueba..."
 
-User.new(
+User.create!(
   email: "andres@smartacademy.com",
   password: "password123",
   password_confirmation: "password123",
@@ -16,7 +16,7 @@ User.new(
       monday: ["17:00", "21:00"],
       tuesday: ["17:00", "21:00"],
       wednesday: ["17:00", "21:00"],
-      
+
     }
   }
 )
