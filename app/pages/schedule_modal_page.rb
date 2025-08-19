@@ -12,18 +12,12 @@ class ScheduleModalPage < ApplicationPage
   end
 
   def fetch_all_lessions
-    within_schedule_frame do    
-      @data = execute(extract_lessions)
-    end
-
-  rescue Selenium::WebDriver::Error::ScriptTimeoutError => e
-    puts "Script timeout occurred: #{e.message}"
-    puts "Consider reducing pagination or increasing timeout"
-    @data
+    within_schedule_frame { execute(extract_lessions) }
   end
 
   private
 
+  # TODO: move this to capybara.rb
   def configure_timeouts    
     Capybara.current_session.driver.browser.manage.timeouts.script_timeout = SCRIPT_TIMEOUT_SECONDS
   end
@@ -34,34 +28,50 @@ class ScheduleModalPage < ApplicationPage
     end
   end
 
-
   def extract_lessions
     <<~JS
       (async () => {
-        const MAPPINGS = { nivel: 3, claseNo: 4, descripcion: 5 };
+        const MAPPINGS = { nivel: 3, claseNo: 4, descripcion: 5, estado: 10 };
         
         const TYPE_PATTERNS = {
           intro: /intro/i,
-          clase: /clase/i,
+          class: /clase/i,
           quiz_unit: /quiz\s*unit/i,
           smart_zone: /smart\s*zone/i,
           exam_prep: /preparaci[oó]n.*examen/i,
           final_exam: /examen\s*final/i
         };
 
+        const STATUS_MAPPING = {
+          'Pendiente': 'pending',
+          'Programada': 'scheduled',
+          'Programado': 'scheduled',
+          'Tomada'    : 'completed',
+          'Completada': 'completed',
+          'Completado': 'completed',
+          'Cancelada': 'cancelled',
+          'Cancelado': 'cancelled',
+          'En Curso': 'in_progress',
+          'En curso': 'in_progress'
+        };
+
         const determineKind = (description) => 
           !description?.trim() ? 'unknown' :
           Object.entries(TYPE_PATTERNS).find(([_, pattern]) => pattern.test(description))?.[0] || 'other';
 
+        const mapStatus = (spanishStatus) => 
+          STATUS_MAPPING[spanishStatus?.trim()] || 'pending';
+
         const extractRowData = (row, index, pageNum) => {
           const cellTexts = Array.from(row.querySelectorAll('td'), cell => cell.textContent?.trim() || '');
-          const { nivel, claseNo, descripcion } = MAPPINGS;
+          const { nivel, claseNo, descripcion, estado } = MAPPINGS;
           
           return {
             html_row_id: row.id,
             level: cellTexts[nivel] || '',
-            number: cellTexts[claseNo] || '',
+            number: parseInt(cellTexts[claseNo]) || '',
             description: cellTexts[descripcion] || '',
+            status: mapStatus(cellTexts[estado]),
             kind: determineKind(cellTexts[descripcion])
           };
         };

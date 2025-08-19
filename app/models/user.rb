@@ -46,7 +46,10 @@ class User
   field :schoolpack_password, type: String
 
   ## Relationships
+  has_many :lessons, class_name: "Lesson", inverse_of: :user
+
   embeds_one :preferences, class_name: Preference
+
   accepts_nested_attributes_for :preferences
 
   ## Validations (additional to Devise)
