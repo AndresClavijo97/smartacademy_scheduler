@@ -52,12 +52,20 @@ FactoryBot.define do
       status { 'scheduled' }
     end
 
+    trait :in_progress do
+      status { 'in_progress' }
+    end
+
     trait :completed do
       status { 'completed' }
     end
 
     trait :cancelled do
       status { 'cancelled' }
+    end
+
+    trait :no_show do
+      status { 'no_show' }
     end
 
     trait :a2_level do

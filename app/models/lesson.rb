@@ -60,7 +60,11 @@ class Lesson
   # State machine
   aasm column: :status do
     state :pending, initial: true
-    state :scheduled, :completed, :cancelled
+    state :scheduled, :in_progress, :completed, :cancelled, :no_show
+
+    event :schedule do
+      transitions from: :pending, to: :scheduled
+    end
 
     event :start do
       transitions from: :scheduled, to: :in_progress
@@ -71,7 +75,7 @@ class Lesson
     end
 
     event :cancel do
-      transitions from: [ :scheduled, :in_progress ], to: :cancelled
+      transitions from: [ :pending, :scheduled, :in_progress ], to: :cancelled
     end
 
     event :reschedule do
