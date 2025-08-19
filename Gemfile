@@ -20,7 +20,7 @@ gem "jbuilder"
 # gem "redis", ">= 4.0.1"
 
 # MongoDB ODM for Rails
-gem "mongoid", "~> 8.1"
+gem "mongoid", "~> 9.0"
 # Encrypted fields for MongoDB - will add later if needed
 # gem "mongoid-encrypted-fields", "~> 1.3"
 
