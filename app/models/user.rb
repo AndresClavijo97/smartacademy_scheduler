@@ -1,5 +1,7 @@
 class User
   include Mongoid::Document
+  include Mongoid::Timestamps
+
   # Include default devise modules. Others available are:
   # :confirmable, :lockable, :timeoutable, :trackable and :omniauthable
   devise :database_authenticatable, :registerable,
@@ -44,7 +46,11 @@ class User
   field :schoolpack_password, type: String
 
   ## Relationships
-  has_one :user_preference, dependent: :destroy
+  has_many :lessons, class_name: "Lesson", inverse_of: :user, dependent: :destroy
+
+  embeds_one :preferences, class_name: Preference
+
+  accepts_nested_attributes_for :preferences
 
   ## Validations (additional to Devise)
   validates :first_name, presence: true
@@ -56,5 +62,38 @@ class User
   index({ created_at: 1 })
   index({ active: 1 })
 
-  include Mongoid::Timestamps
+  # Simple method to register a class
+  def register_class(course_code, date, time)
+    return { success: false, error: "Usuario inactivo" } unless active?
+
+    lesson = Lesson.create!(
+      user: self,
+      course_code: course_code,
+      scheduled_date: date,
+      start_time: time,
+      end_time: calculate_end_time(time),
+      duration_minutes: 90,
+      status: "scheduled"
+    )
+
+    {
+      success: true,
+      lesson_id: lesson.id.to_s,
+      message: "Clase #{course_code} registrada para #{date} a las #{time}"
+    }
+  rescue => e
+    { success: false, error: e.message }
+  end
+
+  def full_name
+    "#{first_name} #{last_name}".strip
+  end
+
+
+  private
+
+  def calculate_end_time(start_time)
+    time = Time.parse(start_time)
+    (time + 90.minutes).strftime("%H:%M")
+  end
 end

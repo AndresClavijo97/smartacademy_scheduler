@@ -28,6 +28,9 @@ gem "mongoid", "~> 8.1"
 gem "devise", "~> 4.9"
 gem "bcrypt", "~> 3.1"
 
+# State machine for workflow management
+gem "aasm", "~> 5.5"
+
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem "tzinfo-data", platforms: %i[ windows jruby ]
 
@@ -49,12 +52,12 @@ group :development, :test do
 
   # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
   gem "rubocop-rails-omakase", require: false
-  
+
   # RSpec for testing
   gem "rspec-rails", "~> 7.0"
   gem "factory_bot_rails"
   gem "faker", "~> 3.2"
-  
+
   # Web automation and scraping
   gem "capybara"
   gem "selenium-webdriver"
