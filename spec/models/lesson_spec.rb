@@ -44,9 +44,9 @@ RSpec.describe Lesson, type: :model do
 
   describe 'constants' do
     it 'defines correct business hours' do
-      expect(Lesson::BUSINESS_START_HOUR).to eq(6)
-      expect(Lesson::BUSINESS_END_HOUR).to eq(19)
-      expect(Lesson::BUSINESS_END_MINUTE).to eq(30)
+      expect(Lesson::START_HOUR).to eq(6)
+      expect(Lesson::END_HOUR).to eq(19)
+      expect(Lesson::END_MINUTE).to eq(30)
     end
 
     it 'defines correct lesson duration' do

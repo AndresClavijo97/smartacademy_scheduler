@@ -6,11 +6,12 @@ class Lesson
   # Constants generales
   DEFAULT_DURATION_MINUTES = 90
   MAX_CLASSES_PER_DAY = 10
+  MIN_CLASSES_PER_DAY = 1
 
   # Horarios de negocio
-  BUSINESS_START_HOUR = 6
-  BUSINESS_END_HOUR = 19
-  BUSINESS_END_MINUTE = 30
+  START_HOUR = 6
+  END_HOUR = 19
+  END_MINUTE = 30
 
   # Tipos de lecciones con información de si son requeridas
   TYPES = {
@@ -29,8 +30,8 @@ class Lesson
   field :status, type: String
   field :office, type: String
   field :scheduled_at, type: Date
-  field :start_time, type: DateTime
-  field :end_time, type: DateTime
+  field :start_time, type: Time
+  field :end_time, type: Time
   field :kind, type: String # Tipo de lección: intro, clase, quiz_unit, smart_zone, exam_prep, final_exam
   field :html_row_id, type: String
 
@@ -42,14 +43,13 @@ class Lesson
 
   # Validación personalizada para horarios válidos
   # validate :valid_time_range
-  # validate :valid_business_hours
+  # validate :valid_hours
 
   # Scopes
-  scope :by_status, ->(status) { where(status: status) }
   scope :by_date_range, ->(start_date, end_date) { where(scheduled_at: start_date..end_date) }
-  scope :mandatory, -> { where(:kind.in => TYPES.select { |_, v| v[:required] }.keys.map(&:to_s)) }
   scope :today, -> { where(scheduled_at: Date.current) }
   scope :upcoming, -> { where(scheduled_at: Date.current..) }
+  scope :available_classes_by_day, ->(limit) { where(status: "pending", :kind.in => [ "class", "quiz_unit" ]).limit(limit) }
 
   # Indexes
   index({ user_id: 1, scheduled_at: 1 })
@@ -92,10 +92,6 @@ class Lesson
     !mandatory?
   end
 
-  def duration_in_hours
-    duration_minutes / 60.0
-  end
-
   def time_range
     "#{start_time.strftime('%H:%M')} - #{end_time.strftime('%H:%M')}"
   end
@@ -108,12 +104,12 @@ class Lesson
     errors.add(:end_time, "debe ser posterior a la hora de inicio")
   end
 
-  def valid_business_hours
-    return if start_time.hour >= BUSINESS_START_HOUR && start_time.hour < BUSINESS_END_HOUR &&
-              end_time.hour >= BUSINESS_START_HOUR &&
-              (end_time.hour < BUSINESS_END_HOUR || (end_time.hour == BUSINESS_END_HOUR && end_time.min <= BUSINESS_END_MINUTE))
+  def valid_hours
+    return if start_time.hour >= START_HOUR && start_time.hour < END_HOUR &&
+              end_time.hour >= START_HOUR &&
+              (end_time.hour < END_HOUR || (end_time.hour == END_HOUR && end_time.min <= END_MINUTE))
 
-    errors.add(:start_time, "debe estar entre #{BUSINESS_START_HOUR}:00 AM y #{BUSINESS_END_HOUR}:#{BUSINESS_END_MINUTE} PM")
-    errors.add(:end_time, "debe estar entre #{BUSINESS_START_HOUR}:00 AM y #{BUSINESS_END_HOUR}:#{BUSINESS_END_MINUTE} PM")
+    errors.add(:start_time, "debe estar entre #{START_HOUR}:00 AM y #{END_HOUR}:#{END_MINUTE} PM")
+    errors.add(:end_time, "debe estar entre #{START_HOUR}:00 AM y #{END_HOUR}:#{END_MINUTE} PM")
   end
 end

@@ -1,4 +1,6 @@
 class Users::FetchAndLoadLessonsFromPage
+  include Navigatable
+
   def initialize(user)
     @user = user
   end
@@ -13,26 +15,9 @@ class Users::FetchAndLoadLessonsFromPage
   attr_reader :user, :lessons_data
 
   def fetch_lessons_from_page
-    login_page.login
-    dashboard.go_to_schedule
-    schedule.open_scheduler
+    navigate_to_scheduler(@user)
+
     @data = schedule_modal.fetch_all_lessions
-  end
-
-  def dashboard
-    DashboardPage.new
-  end
-
-  def login_page
-    LoginPage.new(@user)
-  end
-
-  def schedule
-    SchedulePage.new
-  end
-
-  def schedule_modal
-    ScheduleModalPage.new
   end
 
   def bulk_insert_lessons
