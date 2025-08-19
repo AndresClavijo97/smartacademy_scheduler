@@ -11,11 +11,11 @@ User.create!(
   schoolpack_password: "Adaytoremember1*",
   preferences_attributes: {
     office: "Bello",
-    course: "A1", 
+    course: "A1",
     schedule: {
-      monday: ["17:00", "21:00"],
-      tuesday: ["17:00", "21:00"],
-      wednesday: ["17:00", "21:00"],
+      monday: [ "17:00", "21:00" ],
+      tuesday: [ "17:00", "21:00" ],
+      wednesday: [ "17:00", "21:00" ]
 
     }
   }

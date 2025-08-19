@@ -18,12 +18,12 @@ class ScheduleModalPage < ApplicationPage
   private
 
   # TODO: move this to capybara.rb
-  def configure_timeouts    
+  def configure_timeouts
     Capybara.current_session.driver.browser.manage.timeouts.script_timeout = SCRIPT_TIMEOUT_SECONDS
   end
 
   def within_schedule_frame(&block)
-    within_frame(find('#gxp0_ifrm')) do
+    within_frame(find("#gxp0_ifrm")) do
       yield
     end
   end
@@ -32,7 +32,7 @@ class ScheduleModalPage < ApplicationPage
     <<~JS
       (async () => {
         const MAPPINGS = { nivel: 3, claseNo: 4, descripcion: 5, estado: 10 };
-        
+      #{'  '}
         const TYPE_PATTERNS = {
           intro: /intro/i,
           class: /clase/i,
@@ -55,17 +55,17 @@ class ScheduleModalPage < ApplicationPage
           'En curso': 'in_progress'
         };
 
-        const determineKind = (description) => 
+        const determineKind = (description) =>#{' '}
           !description?.trim() ? 'unknown' :
           Object.entries(TYPE_PATTERNS).find(([_, pattern]) => pattern.test(description))?.[0] || 'other';
 
-        const mapStatus = (spanishStatus) => 
+        const mapStatus = (spanishStatus) =>#{' '}
           STATUS_MAPPING[spanishStatus?.trim()] || 'pending';
 
         const extractRowData = (row, index, pageNum) => {
           const cellTexts = Array.from(row.querySelectorAll('td'), cell => cell.textContent?.trim() || '');
           const { nivel, claseNo, descripcion, estado } = MAPPINGS;
-          
+      #{'    '}
           return {
             html_row_id: row.id,
             level: cellTexts[nivel] || '',
@@ -76,8 +76,8 @@ class ScheduleModalPage < ApplicationPage
           };
         };
 
-        const extractCurrentPage = (pageNum) => 
-          Array.from(document.querySelectorAll('tr[id*="Grid1ContainerRow"]'), 
+        const extractCurrentPage = (pageNum) =>#{' '}
+          Array.from(document.querySelectorAll('tr[id*="Grid1ContainerRow"]'),#{' '}
                      (row, index) => extractRowData(row, index, pageNum));
 
         const hasNextPage = () => {

@@ -1,9 +1,9 @@
 class ApplicationPage
   include Capybara::DSL
-  
+
   private
-  
-  def find_and_click(selector)    
+
+  def find_and_click(selector)
     find(selector).click
   end
 
@@ -13,7 +13,7 @@ class ApplicationPage
 
   def logout
     accept_confirm do
-      find('#SALIR').click
+      find("#SALIR").click
     end
   end
 

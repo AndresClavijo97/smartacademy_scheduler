@@ -46,7 +46,7 @@ class User
   field :schoolpack_password, type: String
 
   ## Relationships
-  has_many :lessons, class_name: "Lesson", inverse_of: :user
+  has_many :lessons, class_name: "Lesson", inverse_of: :user, dependent: :destroy
 
   embeds_one :preferences, class_name: Preference
 
@@ -73,11 +73,11 @@ class User
       start_time: time,
       end_time: calculate_end_time(time),
       duration_minutes: 90,
-      status: 'scheduled'
+      status: "scheduled"
     )
 
-    { 
-      success: true, 
+    {
+      success: true,
       lesson_id: lesson.id.to_s,
       message: "Clase #{course_code} registrada para #{date} a las #{time}"
     }
@@ -94,6 +94,6 @@ class User
 
   def calculate_end_time(start_time)
     time = Time.parse(start_time)
-    (time + 90.minutes).strftime('%H:%M')
+    (time + 90.minutes).strftime("%H:%M")
   end
 end
